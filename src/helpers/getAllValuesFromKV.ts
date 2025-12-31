@@ -1,14 +1,12 @@
-import { KvArray } from '../types';
-
-export async function getAllValuesFromKV(env: Env): Promise<KvArray> {
-	const kvArray: KvArray = [];
+export async function getAllValuesFromKV(env: Env) {
 	const kvList = await env.website_weatherworker.list();
-	const promises = kvList.keys.map(async (key) => {
-		kvArray.push({
-			key: key.name,
-			value: (await env.website_weatherworker.get(key.name)) ?? '',
-		});
-	});
-	await Promise.all(promises);
-	return kvArray;
+
+	const entries = await Promise.all(
+		kvList.keys.map(async (key) => {
+			const raw = await env.website_weatherworker.get(key.name);
+			return [key.name, raw ? JSON.parse(raw) : null] as const;
+		}),
+	);
+
+	return Object.fromEntries(entries);
 }
