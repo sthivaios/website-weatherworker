@@ -11,32 +11,39 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+import { handleGet } from './handlers/get';
+import { handlePost } from './handlers/post';
+import { authenticate } from './helpers/authentication';
+
+const allowedMethods = ['GET', 'POST'];
+
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
-		const givenKey: string | null = request.headers.get("Authorization");
-		const actualKey: string = env.API_KEY;
+		if (!allowedMethods.includes(request.method)) {
+			return new Response(JSON.stringify({ message: 'Method not allowed!' }), {
+				status: 405,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		} else {
+			const authenticationResponse = await authenticate(request, env);
+			if (authenticationResponse instanceof Response) {
+				return authenticationResponse;
+			}
 
-		if (givenKey !== actualKey) {
-			const response = { message: "Unauthorized! Check the Authorization header. It's value should be the API key ONLY without Bearer or anything like that." };
-			return new Response(JSON.stringify(response), {
-				status: 401
+			if (request.method === 'POST') {
+				return await handlePost(request, env);
+			} else if (request.method == 'GET') {
+				return await handleGet(request, env);
+			}
+
+			return new Response(JSON.stringify({ message: 'Internal server error' }), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+				},
 			});
 		}
-
-		const valueToWrite = {
-			timestamp: new Date(),
-			value: Math.random() * 1000 * Math.sqrt(Math.PI) // my incredible random number algorithm lmfao
-		}
-
-		try {
-			await env.website_weatherworker.put("test", JSON.stringify(valueToWrite))
-		} catch (e) {
-			if (e instanceof Error) {
-				console.error(e);
-				return new Response(JSON.stringify({ message: "Internal server error when trying to write to the KV", details: e.message }), { status: 500 })
-			}
-		}
-
-		return new Response(JSON.stringify({ message: "Value written successfully!" }), { status: 200 })
 	},
 } satisfies ExportedHandler<Env>;
