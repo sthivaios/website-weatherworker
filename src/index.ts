@@ -23,8 +23,13 @@ export default {
 			});
 		}
 
+		const valueToWrite = {
+			timestamp: new Date(),
+			value: Math.random() * 1000 * Math.sqrt(Math.PI) // my incredible random number algorithm lmfao
+		}
+
 		try {
-			await env.website_weatherworker.put("test", Math.random().toString())
+			await env.website_weatherworker.put("test", JSON.stringify(valueToWrite))
 		} catch (e) {
 			if (e instanceof Error) {
 				console.error(e);
