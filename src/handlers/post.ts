@@ -21,7 +21,17 @@ export async function handlePost(request: Request, env: Env): Promise<Response> 
 		});
 	}
 
-	const { error: writeError } = await tryCatch(env.website_weatherworker.put(requestBody.sensor, JSON.stringify(requestBody)));
+	const { value, timestamp } = requestBody;
+
+	const { error: writeError } = await tryCatch(
+		env.website_weatherworker.put(
+			requestBody.sensor,
+			JSON.stringify({
+				value: value,
+				timestamp: timestamp,
+			}),
+		),
+	);
 	if (writeError) {
 		return new Response(JSON.stringify({ message: 'Internal server error when trying to write to the KV', details: writeError.message }), {
 			status: 500,
