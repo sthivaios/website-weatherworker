@@ -13,6 +13,19 @@
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+		const givenKey: string | null = request.headers.get("Authorization");
+		const actualKey: string = env.API_KEY;
+
+		if (givenKey === actualKey) {
+			const response = { message: "Auth successful, hello world!" };
+			return new Response(JSON.stringify(response), {
+				status: 200
+			});
+		} else {
+			const response = { message: "nope! wrong key." };
+			return new Response(JSON.stringify(response), {
+				status: 401
+			});
+		}
 	},
 } satisfies ExportedHandler<Env>;
