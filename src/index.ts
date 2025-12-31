@@ -16,16 +16,22 @@ export default {
 		const givenKey: string | null = request.headers.get("Authorization");
 		const actualKey: string = env.API_KEY;
 
-		if (givenKey === actualKey) {
-			const response = { message: "Auth successful, hello world!" };
-			return new Response(JSON.stringify(response), {
-				status: 200
-			});
-		} else {
-			const response = { message: "nope! wrong key." };
+		if (givenKey !== actualKey) {
+			const response = { message: "Unauthorized! Check the Authorization header. It's value should be the API key ONLY without Bearer or anything like that." };
 			return new Response(JSON.stringify(response), {
 				status: 401
 			});
 		}
+
+		try {
+			await env.website_weatherworker.put("test", Math.random().toString())
+		} catch (e) {
+			if (e instanceof Error) {
+				console.error(e);
+				return new Response(JSON.stringify({ message: "Internal server error when trying to write to the KV", details: e.message }), { status: 500 })
+			}
+		}
+
+		return new Response(JSON.stringify({ message: "Value written successfully!" }), { status: 200 })
 	},
 } satisfies ExportedHandler<Env>;
